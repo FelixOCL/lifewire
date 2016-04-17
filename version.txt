@@ -1,0 +1,18 @@
+version 0.2
+You can save blog posts with images
+
+version 0.3
+You can't touch the elements beneath the sending form if you clicked to show the form
+The select post method is now executed by ajax call inside index.html jquery
+Also show pdf files
+
+version 0.4
+You will be able to delete a post
+
+version 0.5
+You can actually click the link and get redirected.
+
+
+future version
+onload() ask for a username with a captcha and keep in cookies so you don't have to enter it every time
+I will be protected from injection

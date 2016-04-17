@@ -1,0 +1,522 @@
+<html>
+	<head>
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+		<meta content="utf-8" http-equiv="encoding">
+		<meta name="Description" CONTENT="Auteur : Félix Ouellet-Cloutier Sujet: Blog personalisé pour me rappeller de certain trucs. Éventuellement pour en faire une version pour qui voudrait utiliser puisse le faire. Guide d'Utilisation: Appuyer sur le plus puis ajouter votre nom et votre message.">
+		
+		<title>
+			Life Wire
+		</title>
+	<!--
+		<link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css" type="text/css" media="screen">
+	-->
+		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen">
+		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen">
+		<link rel="stylesheet" href="css/file.css" type="text/css" media="screen">
+		<script src="./js/jquery-2.1.4.min.js"></script>
+	<!--
+		<script src="./js/jjquery.mobile-1.4.5.min.js"></script>
+	-->
+		<script>
+			var posts = [];
+			var contentWidth;
+			var contentHeight;
+			var actualWindowWidth;
+			var oldWindowWidth;
+			var newImgWidth;
+			var oldImgWidth;
+			var name;
+
+			//ON RESIZE
+			$(window).on('resize', function()
+			{
+				var wDimensions = $(this); //this = window
+				
+				contentHeight = ($(window).height()-170);
+				contentWidth = ($(window).width()-250);
+				actualWindowWidth = $(window).width();
+
+
+				//if (wDimensions.height() >= 820) { /* ... */ }
+				if (wDimensions.width() <= 690) 
+				{ 
+					/* ... IF WIDTH IS LOWER THAN 690 */ 
+					
+					
+					if(actualWindowWidth >= 400)
+					{
+						newImgWidth = (contentWidth / 4);
+						$('#content').css('left',(newImgWidth+5) + "px");
+						$('.blogPost').width(actualWindowWidth - ((newImgWidth*2)+35));
+		
+						$('#bgLeft').width(newImgWidth);
+						$('#bgRight').width(newImgWidth);
+					}
+					else
+					{
+
+						$('#bgLeft').width(newImgWidth);
+						$('#bgRight').width(newImgWidth);
+
+						$('.blogPost').width(400 - ((newImgWidth*2)+40));
+						$('#content').width(400-((newImgWidth*2)+35));
+					}
+						
+
+					//alert(actualWindowWidth);
+				}
+				else
+				{
+					$('#content').css('left',(oldImgWidth + 10) + "px");
+					$('#bgLeft').width(oldImgWidth);
+					$('#bgRight').width(oldImgWidth);
+													$('#content').height(contentHeight);
+													$('#content').width(contentWidth);
+
+													$('.blogPost').width(contentWidth - 55 );
+				}
+
+
+				
+			});
+
+
+			//ON READY
+			$(document).ready(function(){
+				oldImgWidth = ($('#bgLeft').width())
+				oldWindowWidth = $(window).width();
+				$(window).trigger('resize');
+
+				getName();
+
+				loadPosts();
+
+				//SHOW PANEL TO ADD A POST
+				$('#showEnvoi').click(function(){
+					if($('#txtUser').val() == '')
+					{
+						if($('#txtUsername').val != '')
+						{
+							$('#txtUser').val($('#txtUsername').val());
+						}
+						else
+						{
+							$.ajax(
+							{
+							    url: "",
+							    context: document.body,
+							    success: function(s,x){
+							        $(this).html(s);
+							    }
+							});
+							return;
+						}
+					}
+
+					$('#envoi').toggle();
+					$('#transparent_background').toggle();
+				});
+
+				//THIS WILL FIRE THE DELETE POST EVENT
+				$("#blog").on("click", "div.closeDelete", function(){
+
+					var id = $(this).find('input[name="txtID"]').serialize(); //answer from Andreas from Germany
+				    
+				    $.ajax( {
+						url: './php/remove.php',
+						type: 'POST',
+						data: id,
+						dataType: 'html'
+				  	}).done(function(data)
+				  	{
+				  		loadPosts();
+				  		console.log(data);
+				  	}).error(function(data)
+					{
+				  		loadPosts();
+						alert(data.error);
+						console.log(data.errorText);
+					});
+				});
+
+				$('#divEnvoiFichier').click(function()
+					{
+						//alert("testing ok!");
+						$('#envoiFichier').toggle();
+					});
+
+			/*WHAT TO DO WHEN POSTING*/
+				$('form[name="formEnvoi"]').submit(function( e ) {
+					var myFiles = $('#files').val();
+					
+					if(myFiles == '')
+					{
+						var fd = new FormData(document.querySelector("form[name='formEnvoi']"));
+						//alert(fd);
+					    $.ajax( {
+							url: './php/savePost.php',
+							type: 'POST',
+							data: fd,
+							processData: false,
+							contentType: false
+					  	}).done(function(data){
+					  		//alert(data);
+					  		loadPosts();
+					  	});		
+					}
+					else
+					{
+
+						var fd = new FormData(document.querySelector("form[name='formEnvoi']"));
+						//alert(fd);
+					    $.ajax( 
+					    {
+							url: './php/uploadPost.php',
+							type: 'POST',
+							data: fd,
+							processData: false,
+							contentType: false
+					  	}).done(function(data)
+					  	{
+					  		loadPosts();
+					  	}).error(function(data)
+						{
+							alert(data);
+							console.log(data.errorText);
+						});
+
+					}
+
+					//RESET FORM
+					$('form[name="formEnvoi"]')[0].reset();
+				  	e.preventDefault();
+
+					$('#envoi').toggle();
+					$('#transparent_background').toggle();
+				});
+
+//WHEN WE SET THE USERNAME (FIRST TIME SETTING THE USERNAME)
+				$('#btnSetName').click(function()
+				{
+					if($('#txtSetName').val() == '')
+					{
+						return false;
+					}
+					name = $('#txtGetName').val();
+					$('#username').val(name);
+					$('#txtUser').val(name);
+					localStorage[name] = name;
+					$('#getName').toggle();
+					$('#transparent_background').toggle();
+				});
+
+//WHEN WE CONFIRM USERNAME (ALREADY EXISTED IN MEMORY)
+				$('#btnConfirmName').click(function(){
+					$('#txtUsername').val(name);
+					$('#txtUser').val(name);
+					$('#getName').toggle();
+					$('#transparent_background').toggle();
+				});
+
+//btnUnsetName
+				$('#btnUnsetName').click(function()
+				{
+					name = '';
+					localStorage[name] = name;
+
+
+					$.ajax({
+					    url: "",
+					    context: document.body,
+					    success: function(s,x){
+					        $(this).html(s);
+					    }
+					});
+
+				});
+
+
+
+
+			});
+
+			function getName()
+			{
+				if(localStorage[name] != '')
+				{
+					$('input[name=txtUsername').val(localStorage[name]);
+					$('input[name=txtUser').val(localStorage[name]);
+					return;
+
+				}
+				$('#getName').toggle();
+				$('#transparent_background').toggle();
+
+				if(localStorage[name] == '')
+				{
+					$('#spanSetName').toggle();
+				}
+				else
+				{
+					$('#spanGetName').toggle();
+					localStorage[name] = name;
+					$('input[name=txtGetName').val(localStorage[name]);
+				}
+
+			}
+
+
+			function loadPosts() 
+			{
+				$('#blog').empty();
+				var myPosts;
+				$.ajax(
+				{
+					type: 'GET',
+					url: './php/selectPosts.php',
+				}).success(function(data) 
+				{
+					//alert("merde \n" + data);
+
+					myProjects = JSON.parse(data);
+					for(var i = 0; i < myProjects.length; i++)
+					{
+						constructDiv(myProjects[i].id, myProjects[i].title, myProjects[i].description, myProjects[i].timestamp, myProjects[i].name, myProjects[i].type ); 
+					}
+				}).error(function(data)
+				{
+			  		alert(data.errorText);
+					console.log(data.errorText);
+				});
+			}
+
+			function constructDiv(id, title, description, timestamp, name, type)
+			{
+				//alert("constructing");
+
+				var re = new RegExp("^((http|https|ftp)\://)[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?/?([a-zA-Z0-9\-\._\?\,\'/\\\+&amp;%\$#\=~])*$"); //->Taken from: http://regexlib.com/REDetails.aspx?regexp_id=90 thanks to this guy!
+				var x = 0;
+				for (;x<description.length; x++)
+				{
+					if(re.test(description.substring(x)))
+					{
+						//alert(description.substring(x));
+					description = description.substring(0,x) + "<a href='" + description.substring(x) + "' target='_BLANK'>" + description.substring(x) + "</a>";
+					}
+				}
+
+
+
+				if(type === "pdf")
+				{
+					$('#blog').append('<div class="blogPost"><div class="postTimeStamp">' + timestamp + '</div><div class="closeDelete"><input type="hidden" name="txtID" readonly="readonly" value="' + id + '" /><div class="close-text">EFFACER</div></div><div class="postTitre">' + title + '</div><div class="postDescription">' + description + '</div><embed class="embedPDF" src="./uploads/' + name + '#toolbar=0&navpanes=0&scrollbar=0"/></div>');
+
+				}
+				else if(type == "")
+				{
+					$('#blog').append('<div class="blogPost"><div class="postTimeStamp">' + timestamp + '</div><div class="closeDelete"><input type="hidden" name="txtID" readonly="readonly" value="' + id + '" /><div class="close-text">EFFACER</div></div><div class="postTitre">' + title + '</div><div class="postDescription">' + description + '</div></div>');
+
+				}
+				else
+				{
+					$('#blog').append('<div class="blogPost"><div class="postTimeStamp">' + timestamp + '</div><div class="closeDelete"><input type="hidden" name="txtID" readonly="readonly" value="' + id + '" /><div class="close-text">EFFACER</div></div><div class="postTitre">' + title + '</div><div class="postDescription">' + description + '</div><a href="./uploads/' + name + '" target="_BLANK"><img class="thumb" src="./uploads/' + name + '"></a></div>');
+				}
+
+
+			}
+
+		</script>
+	</head>
+	<body>
+<img src="./img/special_form.png" id="bgLeft">
+<img src="./img/special_form.png" id="bgRight">
+<input type="input" id="txtUsername" readonly="readonly"/>
+		<header>
+			LifeWire
+		</header>
+
+<!--DIV FOR SETTING THE USERNAME -->
+		<div id="getName">
+			<span id="spanSetName">
+			<legend>Set Name</legend>
+				<hgroup>
+					<p>Entrez votre nom.</p>
+					<label for="txtSetName">Nom:</label>
+					<input type="text" name="txtSetName" id="txtSetName" required>
+				</hgroup>
+				<input type="submit" id="btnSetName" name="btnSetName" value="Confirmer"/>
+			</span>
+
+			<span id="spanGetName">
+				<legend>Get Name</legend>
+				<hgroup>
+					<p>Confirmez votre nom.</p>
+					<label for="txtGetName">Nom:</label>
+					<input type="text" name="txtGetName" id="txtGetName" readonly="readonly">
+				</hgroup>
+				<input type="submit" id="btnConfirmName" name="btnGetName" value="Confirmer"/>
+				<input type="reset" id="btnUnsetName" name="btnUnsetName" value="Modifier"/>
+			</span>
+		</div>
+
+<!--DIV SHOWING WHEN THE PLUS BTN IS PRESSED ( this is to add a post ) -->
+		<span id="showEnvoi">
+		</span>
+		<div id="envoi">
+		<!--
+			<form enctype="multipart/form-data" action="./php/upload.php" method="POST">
+		-->
+			<form name="formEnvoi">
+				<hgroup>
+				­­	<label for="txtUser">Usager</label>
+					<input type="text" name="txtUser" id="txtUser" readonly="readonly" required>
+				</hgroup>
+				<hgroup
+				­­	<label for="txtTitle">Titre</label>
+					<input type="text" name="txtTitle" id="txtTitle" required>
+				</hgroup>
+				<hgroup>
+				­­	<label for="txtDescription">Description</label>
+					<input type="text" name="txtDescription" id="txtDescription">
+				</hgroup>
+				<div id="divEnvoiFichier">
+
+					+
+
+				</div>
+				<hgroup id="envoiFichier">
+					<label for="files">Fichiers</label>
+					<input name="uploadedfile" id="files" type="file" />
+					<output id="list"></output>
+					<button onclick="abortRead();" type="reset">Annuler</button>
+					<div id="progress_bar"><div class="percent">0%</div></div>
+				</hgroup>
+				<hgroup>
+					<input type="submit" name="btnEnvoyer" value="Envoyer"/>
+				</hgroup>
+			</form>
+	<!--
+		http://www.html5rocks.com/en/tutorials/file/dndfiles/
+	-->
+			<script>
+
+			  var reader;
+			  var progress = document.querySelector('.percent');
+
+			  function abortRead() {
+			    reader.abort();
+			    $('#list').html();
+			    $('#files').val();
+			  }
+
+			  function errorHandler(evt) {
+			    switch(evt.target.error.code) {
+			      case evt.target.error.NOT_FOUND_ERR:
+			        alert('File Not Found!');
+			        break;
+			      case evt.target.error.NOT_READABLE_ERR:
+			        alert('File is not readable');
+			        break;
+			      case evt.target.error.ABORT_ERR:
+			        break; // noop
+			      default:
+			        alert('An error occurred reading this file.');
+			    };
+			  }
+
+			  function updateProgress(evt) {
+			    // evt is an ProgressEvent.
+			    if (evt.lengthComputable) {
+			      var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+			      // Increase the progress bar length.
+			      if (percentLoaded < 100) {
+			        progress.style.width = percentLoaded + '%';
+			        progress.textContent = percentLoaded + '%';
+			      }
+			    }
+			  }
+
+			  function handleFileSelect(evt) {
+
+			  	//Function to show images
+			  	handleThumbnail(evt);
+
+			    // Reset progress indicator on new file selection.
+			    progress.style.width = '0%';
+			    progress.textContent = '0%';
+
+			    reader = new FileReader();
+			    reader.onerror = errorHandler;
+			    reader.onprogress = updateProgress;
+			    reader.onabort = function(e) {
+			      alert('File read cancelled');
+			    };
+			    reader.onloadstart = function(e) {
+			      document.getElementById('progress_bar').className = 'loading';
+			    };
+			    reader.onload = function(e) {
+			      // Ensure that the progress bar displays 100% at the end.
+			      progress.style.width = '100%';
+			      progress.textContent = '100%';
+			      setTimeout("document.getElementById('progress_bar').className='';", 2000);
+			    }
+
+			    // Read in the image file as a binary string.
+			    reader.readAsBinaryString(evt.target.files[0]);
+			  }
+
+			  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+			  function handleThumbnail(evt) {
+			    var files = evt.target.files; // FileList object
+
+			    // Loop through the FileList and render image files as thumbnails.
+			    for (var i = 0, f; f = files[i]; i++) {
+
+			      // Only process image files.
+			      if (!f.type.match('image.*')) {
+			        continue;
+			      }
+
+			      var reader = new FileReader();
+
+			      // Closure to capture the file information.
+			      reader.onload = (function(theFile) {
+			        return function(e) {
+			          // Render thumbnail.
+			          var span = document.createElement('span');
+			          span.innerHTML = ['<img class="thumb" src="', e.target.result,
+			                            '" title="', escape(theFile.name), '"/>'].join('');
+			          document.getElementById('list').insertBefore(span, null);
+			        };
+			      })(f);
+
+			      // Read in the image file as a data URL.
+			      reader.readAsDataURL(f);
+			    }
+			  }
+
+			  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+			</script>
+		</div>
+
+		<div id="content">
+
+
+			<div id="blog">
+
+			</div>
+
+		</div>
+		<div id="transparent_background">
+		</div>
+		
+		<div id="info">
+			
+		</div>
+
+		<footer>
+			Copie de gauche par Félix OC.
+		</footer>
+	</body>
+</html>
