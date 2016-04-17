@@ -18,3 +18,5 @@ I'm calculating it is around version 0.5.
 Next version would possibly have a page as personal profile so maybe like ./lifewire/FelixOCL/ so it's actually MY personnal notes to remember.
 
 Hope you have fun
+
+Obviously, i did remove password and username so you could fit it on your own setup.
